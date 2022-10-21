@@ -24,13 +24,13 @@
 #include <misc/marlin_platform.h>
 
 #include <misc/wcn_bus.h>
+
 static struct rfkill *bt_rfk;
 static const char bt_name[] = "bluetooth";
 int set_power_ret = 0;
 
 static int bluetooth_set_power(void *data, bool blocked)
 {
-#if 1
 	pr_info("%s: start_block=%d\n", __func__, blocked);
 	if (!blocked)
 		set_power_ret = start_marlin(MARLIN_BLUETOOTH);
@@ -38,7 +38,9 @@ static int bluetooth_set_power(void *data, bool blocked)
 		set_power_ret = stop_marlin(MARLIN_BLUETOOTH);
 
 	pr_info("%s: end_block: %d, ret: %d\n", __func__, blocked, set_power_ret);
-#endif
+
+	msleep(500);
+
 	return set_power_ret;
 }
 
@@ -59,10 +61,13 @@ int rfkill_bluetooth_init(struct platform_device *pdev)
 		goto err_rfkill_alloc;
 	}
 	/* userspace cannot take exclusive control */
-	rfkill_init_sw_state(bt_rfk, true);
+	rfkill_init_sw_state(bt_rfk, false);
 	rc = rfkill_register(bt_rfk);
 	if (rc)
 		goto err_rfkill_reg;
+
+	pr_info("wake up\n");
+	bluetooth_set_power(bt_rfk, false);
 
 	pr_info("<--%s\n", __func__);
 
