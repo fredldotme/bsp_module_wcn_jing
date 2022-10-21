@@ -44,7 +44,7 @@
 #include <linux/dma-mapping.h>
 
 
-#define MTTY_DEV_MAX_NR     1
+#define MTTY_DEV_MAX_NR     2
 
 #define MTTY_STATE_OPEN     1
 #define MTTY_STATE_CLOSE    0
@@ -562,9 +562,9 @@ static int mtty_tty_driver_init(struct mtty_device *device)
     if (!device->port1)
         return -ENOMEM;
 
-    driver = alloc_tty_driver(MTTY_DEV_MAX_NR);
-    if (!driver)
-        return -ENOMEM;
+    driver = tty_alloc_driver(MTTY_DEV_MAX_NR, TTY_DRIVER_REAL_RAW);
+    if (IS_ERR(driver))
+        return PTR_ERR(driver);
 
     /*
     * Initialize the tty_driver structure
@@ -580,7 +580,6 @@ static int mtty_tty_driver_init(struct mtty_device *device)
     driver->init_termios = tty_std_termios;
     driver->driver_state = (void *)device;
     device->driver = driver;
-    device->driver->flags = TTY_DRIVER_REAL_RAW;
     /* initialize the tty driver */
     tty_set_operations(driver, &mtty_ops);
     tty_port_link_device(device->port0, driver, 0);
