@@ -23,6 +23,7 @@
 #include <linux/console.h>
 #include <linux/delay.h>
 #include <linux/semaphore.h>
+#include <linux/mutex.h>
 #ifdef CONFIG_OF
 #include <linux/of_device.h>
 #endif
@@ -101,6 +102,7 @@ static unsigned int log_level = MTTY_LOG_LEVEL_NONE;
     } while (0)
 
 extern int set_power_ret;
+extern struct mutex set_power_mutex;
 static struct device *dm_rx_t = NULL;
 unsigned long dm_rx_phy[BT_RX_MAX_NUM];
 unsigned char *(dm_rx_ptr[BT_RX_MAX_NUM]);
@@ -394,21 +396,27 @@ static int mtty_open(struct tty_struct *tty, struct file *filp)
 {
     struct mtty_device *mtty = NULL;
     struct tty_driver *driver = NULL;
+    int ret = -1;
+
+    mutex_lock(&set_power_mutex);
+
     if (set_power_ret != 0) {
         pr_err("mtty_open : set power failed , return!\n");
-        return -1;
+        goto done;
     }
 
     if (tty == NULL) {
         pr_err("mtty open input tty is NULL!\n");
-        return -ENOMEM;
+        ret = -ENOMEM;
+        goto done;
     }
     driver = tty->driver;
     mtty = (struct mtty_device *)driver->driver_state;
 
     if (mtty == NULL) {
         pr_err("mtty open input mtty NULL!\n");
-        return -ENOMEM;
+        ret = -ENOMEM;
+        goto done;
     }
 
     mtty->tty = tty;
@@ -423,9 +431,12 @@ static int mtty_open(struct tty_struct *tty, struct file *filp)
     sprdwcn_bus_chn_init(&bt_rx_ops);
     sprdwcn_bus_chn_init(&bt_tx_ops0);
     mtty_dma_buf_alloc(BT_RX_CHANNEL, BT_RX_DMA_SIZE, BT_RX_MAX_NUM);
+    ret = 0;
     pr_info("mtty_open device success!\n");
 
-    return 0;
+done:
+    mutex_unlock(&set_power_mutex);
+    return ret;
 }
 
 static void mtty_close(struct tty_struct *tty, struct file *filp)

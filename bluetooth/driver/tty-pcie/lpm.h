@@ -14,6 +14,8 @@
 #ifndef __MARLIN_BT_LPM_H
 #define __MARLIN_BT_LPM_H
 
+void host_wakeup_bt(void);
+void host_suspend_bt(void);
 void bt_wakeup_host(void);
 int  bluesleep_init(void);
 void bluesleep_exit(void);

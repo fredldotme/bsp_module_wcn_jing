@@ -35,6 +35,12 @@ void host_wakeup_bt(void)
 	marlin_set_wakeup(MARLIN_BLUETOOTH);
 }
 
+void host_suspend_bt(void)
+{
+	marlin_set_sleep(MARLIN_BLUETOOTH, TRUE);
+	wake_unlock(&tx_wakelock);
+}
+
 void bt_wakeup_host(void)
 {
 	wake_unlock(&tx_wakelock);
